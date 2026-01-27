@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional CFU Calculator</title>
+
+    <!-- KaTeX CSS & JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-alt: #334155;
+            --border: #475569;
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.3);
+            --danger: #ef4444;
+            --success: #22c55e;
+            --warning: #eab308;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+
+            /* Logic Colors */
+            --valid-bg: rgba(34, 197, 94, 0.2);
+            --valid-border: #22c55e;
+            --est-bg: rgba(234, 179, 8, 0.2);
+            --est-border: #eab308;
+            --high-bg: rgba(239, 68, 68, 0.2);
+            --high-border: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: var(--surface);
+            padding: 25px 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .settings {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: var(--surface-alt);
+            padding: 12px 20px;
+            border-radius: 12px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--muted);
+        }
+
+        input[type="number"],
+        input[type="text"] {
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1.1rem;
+            background: var(--surface);
+            color: var(--text);
+            transition: all 0.2s;
+        }
+
+        input[type="number"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        /* Systems Grid */
+        .systems-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 600px) {
+            .systems-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* System Card */
+        .system-card {
+            background: var(--surface);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .system-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--surface-alt);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .system-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .system-number {
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .system-name-input {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 1rem;
+            padding: 5px 10px;
+            border-radius: 6px;
+            width: 180px;
+        }
+
+        .system-name-input:focus {
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
+
+        .system-name-input::placeholder {
+            color: var(--muted);
+        }
+
+        .remove-system-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1.5rem;
+            opacity: 0.5;
+            transition: all 0.2s;
+            padding: 5px 10px;
+            border-radius: 6px;
+        }
+
+        .remove-system-btn:hover {
+            opacity: 1;
+            background: var(--high-bg);
+        }
+
+        .system-body {
+            padding: 20px;
+        }
+
+        .system-result {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
+            border-top: 1px solid var(--border);
+        }
+
+        .system-result-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .system-result-error {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        /* Table Styles */
+        .table-wrapper {
+            background: var(--surface-alt);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 6px;
+        }
+
+        th {
+            padding: 10px;
+            font-size: 0.85rem;
+            color: var(--muted);
+            text-align: center;
+            font-weight: 600;
+        }
+
+        td {
+            text-align: center;
+        }
+
+        .col-remove-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1.2rem;
+            opacity: 0.5;
+            transition: all 0.2s;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .col-remove-btn:hover {
+            opacity: 1;
+            background: var(--high-bg);
+        }
+
+        .row-remove-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            opacity: 0.5;
+            transition: all 0.2s;
+        }
+
+        .row-remove-btn:hover {
+            background: var(--high-bg);
+            opacity: 1;
+        }
+
+        .input-dilution {
+            width: 70px;
+            text-align: center;
+            font-weight: bold;
+            background: var(--surface);
+            font-size: 1rem;
+            padding: 10px;
+        }
+
+        .input-count {
+            width: 80px;
+            text-align: center;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+            border: 2px solid var(--border);
+            padding: 10px;
+            background: var(--surface);
+            color: var(--text);
+            border-radius: 8px;
+        }
+
+        .input-count::placeholder {
+            color: var(--muted);
+            opacity: 0.5;
+        }
+
+        .input-count:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        /* Status Colors */
+        .is-valid {
+            background-color: var(--valid-bg) !important;
+            border-color: var(--valid-border) !important;
+        }
+
+        .is-est {
+            background-color: var(--est-bg) !important;
+            border-color: var(--est-border) !important;
+        }
+
+        .is-high {
+            background-color: var(--high-bg) !important;
+            border-color: var(--high-border) !important;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background: var(--surface-alt);
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-danger {
+            color: var(--danger);
+        }
+
+        .btn-danger:hover {
+            border-color: var(--danger);
+            background: var(--high-bg);
+        }
+
+        .legend {
+            font-size: 0.8rem;
+            color: var(--muted);
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: var(--surface);
+            border-radius: 6px;
+            justify-content: center;
+        }
+
+        .legend span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* Summary Panel */
+        .summary-panel {
+            background: var(--surface);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .summary-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-item {
+            background: var(--surface-alt);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .summary-item-label {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .summary-item-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .summary-item-error {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        .average-section {
+            background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .average-label {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-bottom: 10px;
+        }
+
+        .average-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .average-warning {
+            background: var(--est-bg);
+            border: 1px solid var(--est-border);
+            border-radius: 8px;
+            padding: 15px;
+            color: var(--est-border);
+            margin-top: 15px;
+        }
+
+        .order-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-left: 10px;
+        }
+
+        .order-same {
+            background: var(--valid-bg);
+            color: var(--valid-border);
+        }
+
+        .order-diff {
+            background: var(--est-bg);
+            color: var(--est-border);
+        }
+
+        /* KaTeX */
+        .katex {
+            color: var(--text);
+        }
+
+        .no-systems {
+            text-align: center;
+            padding: 60px;
+            color: var(--muted);
+            font-size: 1.2rem;
+        }
+
+        .unit {
+            font-size: 0.8em;
+            opacity: 0.7;
+            margin-left: 5px;
+        }
+
+        /* Calculation Breakdown */
+        .calc-section {
+            background: var(--surface);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .calc-section-title {
+            background: var(--surface-alt);
+            padding: 15px 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .calc-section-body {
+            padding: 25px;
+        }
+
+        .calc-block {
+            background: var(--surface-alt);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .calc-block:last-child {
+            margin-bottom: 0;
+        }
+
+        .calc-block-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        .calc-block.average {
+            border-left-color: var(--success);
+        }
+
+        .calc-block.average .calc-block-title {
+            color: var(--success);
+        }
+
+        .math-row {
+            margin: 10px 0;
+            overflow-x: auto;
+            padding: 5px 0;
+        }
+
+        .math-note {
+            background: var(--est-bg);
+            border: 1px solid var(--est-border);
+            border-radius: 6px;
+            padding: 10px 15px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: var(--est-border);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>CFU Calculator</h1>
+            <div class="header-controls">
+                <div class="settings">
+                    <label>Volume Plated (V):</label>
+                    <input type="number" id="volInput" value="0.1" step="0.05" style="width: 80px;">
+                    <span>mL</span>
+                </div>
+                <button class="btn btn-primary" onclick="addSystem()">+ Add Biological Replicate</button>
+            </div>
+        </header>
+
+        <!-- Systems Container -->
+        <div id="systemsContainer" class="systems-container">
+            <!-- Dynamic system cards -->
+        </div>
+
+        <!-- Summary Panel (shown when multiple systems exist) -->
+        <div id="summaryPanel" class="summary-panel" style="display: none;">
+            <div class="summary-title">
+                <span>📊 Biological Replicates Summary</span>
+                <div class="error-method-toggle">
+                    <label style="font-size: 0.85rem; margin-right: 10px;">Error Method:</label>
+                    <button id="errorMethodBtn" class="btn" onclick="toggleErrorMethod()"
+                        style="padding: 6px 12px; font-size: 0.85rem;">
+                        📊 Average
+                    </button>
+                </div>
+            </div>
+            <div id="summaryGrid" class="summary-grid">
+                <!-- Dynamic summary items -->
+            </div>
+            <div id="averageSection" class="average-section">
+                <div class="average-label">Average CFU/mL (same order of magnitude)</div>
+                <div id="averageValue" class="average-value">-</div>
+            </div>
+            <div id="averageWarning" class="average-warning" style="display: none;">
+                ⚠️ Results differ by more than one order of magnitude. Averaging may not be appropriate.
+            </div>
+        </div>
+
+        <!-- Calculation Breakdown Section -->
+        <div id="calcSection" class="calc-section" style="display: none;">
+            <div class="calc-section-title">📐 Calculation Breakdown</div>
+            <div class="calc-section-body" id="calcBody">
+                <!-- Dynamic calculation blocks -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Global State ---
+        let globalVol = 0.1;
+        let systems = [];
+        let systemCounter = 0;
+        let errorMethod = 'average'; // 'average' or 'propagation'
+
+        function toggleErrorMethod() {
+            errorMethod = errorMethod === 'average' ? 'propagation' : 'average';
+            const btn = document.getElementById('errorMethodBtn');
+            btn.innerHTML = errorMethod === 'average' ? '📊 Average' : '√ Propagation';
+            updateSummary();
+        }
+
+        // --- Helper: Format number as LaTeX scientific notation ---
+        function toLatexSci(num, precision = 2) {
+            if (num === 0) return '0';
+            const exp = Math.floor(Math.log10(Math.abs(num)));
+            const mant = num / Math.pow(10, exp);
+            const mantRounded = mant.toFixed(precision - 1);
+            if (exp === 0) return mantRounded;
+            return `${mantRounded} \\times 10^{${exp}}`;
+        }
+
+        // --- Banker's Rounding (Round half to even) ---
+        function bankersRound(num, decimals) {
+            const d = decimals || 0;
+            const m = Math.pow(10, d);
+            const n = +(d ? num * m : num).toFixed(8);
+            const i = Math.floor(n), f = n - i;
+            const e = 1e-8;
+            const r = (f > 0.5 - e && f < 0.5 + e) ?
+                ((i % 2 === 0) ? i : i + 1) : Math.round(n);
+            return d ? r / m : r;
+        }
+
+        // --- Format result based on error (proper scientific rounding) ---
+        // The error determines precision: round error to 1-2 sig figs, then match result to same decimal place
+        function formatWithError(result, error) {
+            if (result === 0) return { mantissa: '0', exponent: 0, errorFormatted: '0', precision: 1 };
+
+            // Step 1: Determine the exponent of the result
+            const resultExp = Math.floor(Math.log10(Math.abs(result)));
+
+            // Step 2: Determine the exponent of the error (how many sig figs we can trust)
+            const errorExp = Math.floor(Math.log10(Math.abs(error)));
+
+            // The error tells us the uncertainty. We round error to 1-2 sig figs.
+            // The number of decimal places in the result should match the error's decimal place.
+
+            // Step 3: Determine precision
+            // If error is ~10^5 and result is ~10^7, we have 2 meaningful figures.
+            // precision = resultExp - errorExp + 1 (approximately how many sig figs)
+            // But we cap error display to 2 sig figs max.
+
+            // Normalize error to same scale as mantissa
+            const errorNormalized = error / Math.pow(10, resultExp);
+
+            // Round error to 2 sig figs
+            const errorDecimalPlaces = Math.max(0, 1 - Math.floor(Math.log10(Math.abs(errorNormalized))));
+            const errorRounded = bankersRound(errorNormalized, errorDecimalPlaces);
+
+            // Determine decimal places needed for the mantissa (match error's precision)
+            // If error rounds to e.g. 0.63, we need 2 decimal places on mantissa
+            const mantissaDecimalPlaces = errorDecimalPlaces;
+
+            // Round the mantissa using Banker's rounding
+            const resultNormalized = result / Math.pow(10, resultExp);
+            const mantissaRounded = bankersRound(resultNormalized, mantissaDecimalPlaces);
+
+            // Handle rollover (e.g., 9.95 -> 10.0)
+            let finalMantissa = mantissaRounded;
+            let finalExp = resultExp;
+            if (Math.abs(finalMantissa) >= 10) {
+                finalMantissa /= 10;
+                finalExp += 1;
+                // Recalculate error for new scale
+            }
+
+            return {
+                mantissa: finalMantissa.toFixed(mantissaDecimalPlaces),
+                exponent: finalExp,
+                errorFormatted: errorRounded.toFixed(errorDecimalPlaces),
+                precision: mantissaDecimalPlaces + 1
+            };
+        }
+
+
+        // --- System Template ---
+        function createSystem() {
+            systemCounter++;
+            return {
+                id: 'sys_' + systemCounter,
+                name: '',
+                number: systemCounter,
+                rows: [
+                    { id: 'r1', dilution: -1 },
+                    { id: 'r2', dilution: -2 },
+                    { id: 'r3', dilution: -3 }
+                ],
+                colCount: 2,
+                data: {},
+                result: null // { value, error, status, mantissa, exponent }
+            };
+        }
+
+        // --- Init ---
+        function init() {
+            addSystem(); // Start with one system
+            document.getElementById('volInput').addEventListener('input', (e) => {
+                globalVol = parseFloat(e.target.value) || 0.1;
+                systems.forEach(sys => recalcSystem(sys));
+                updateSummary();
+            });
+        }
+
+        // --- Add/Remove Systems ---
+        function addSystem() {
+            const sys = createSystem();
+            systems.push(sys);
+            renderSystems();
+            updateSummary();
+        }
+
+        function removeSystem(sysId) {
+            if (systems.length === 1) {
+                if (!confirm('Remove last system? This will reset the calculator.')) return;
+            }
+            systems = systems.filter(s => s.id !== sysId);
+            if (systems.length === 0) {
+                addSystem();
+            } else {
+                renderSystems();
+                updateSummary();
+            }
+        }
+
+        // --- Render All Systems ---
+        function renderSystems() {
+            const container = document.getElementById('systemsContainer');
+            container.innerHTML = '';
+
+            systems.forEach((sys, index) => {
+                const card = document.createElement('div');
+                card.className = 'system-card';
+                card.id = sys.id;
+
+                card.innerHTML = `
+                    <div class="system-header">
+                        <div class="system-title">
+                            <span class="system-number">System ${index + 1}</span>
+                            <input type="text" class="system-name-input" 
+                                   placeholder="Optional name..." 
+                                   value="${sys.name}"
+                                   onchange="updateSystemName('${sys.id}', this.value)">
+                        </div>
+                        <button class="remove-system-btn" onclick="removeSystem('${sys.id}')" title="Remove system">×</button>
+                    </div>
+                    <div class="system-body">
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr id="headerRow_${sys.id}">
+                                        <th>Dilution<div style="font-size:0.7em; font-weight:normal; opacity:0.7;">(10<sup>x</sup>)</div></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gridBody_${sys.id}"></tbody>
+                            </table>
+                        </div>
+                        <div class="legend">
+                            <span><span class="dot" style="background:#22c55e"></span>Valid (30-300)</span>
+                            <span><span class="dot" style="background:#eab308"></span>Est (&lt;30)</span>
+                            <span><span class="dot" style="background:#ef4444"></span>High (&gt;300)</span>
+                        </div>
+                        <div class="controls">
+                            <button class="btn" onclick="addCol('${sys.id}')">+ Rep</button>
+                            <button class="btn" onclick="addRow('${sys.id}')">+ Dilution</button>
+                            <div style="flex-grow:1"></div>
+                            <button class="btn btn-danger" onclick="resetSystem('${sys.id}')">Reset</button>
+                        </div>
+                    </div>
+                    <div class="system-result" id="result_${sys.id}" style="display:none;">
+                        <div class="system-result-value" id="resultValue_${sys.id}">-</div>
+                        <div class="system-result-error" id="resultError_${sys.id}">-</div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+                renderSystemGrid(sys);
+            });
+        }
+
+        // --- Render Single System Grid ---
+        function renderSystemGrid(sys) {
+            const thead = document.getElementById('headerRow_' + sys.id);
+            const tbody = document.getElementById('gridBody_' + sys.id);
+
+            // Clear old columns (keep first th)
+            while (thead.children.length > 1) thead.removeChild(thead.lastChild);
+
+            // Add column headers
+            for (let c = 0; c < sys.colCount; c++) {
+                const th = document.createElement('th');
+                th.innerHTML = `
+                    <div>Rep ${c + 1}</div>
+                    <button class="col-remove-btn" onclick="removeCol('${sys.id}', ${c})">×</button>
+                `;
+                thead.appendChild(th);
+            }
+
+            // Render body
+            tbody.innerHTML = '';
+            sys.rows.forEach((row) => {
+                const tr = document.createElement('tr');
+
+                // Dilution cell
+                const tdDil = document.createElement('td');
+                tdDil.style.display = 'flex';
+                tdDil.style.alignItems = 'center';
+                tdDil.style.gap = '6px';
+
+                const btnDel = document.createElement('button');
+                btnDel.className = 'row-remove-btn';
+                btnDel.innerHTML = '×';
+                btnDel.onclick = () => removeRow(sys.id, row.id);
+
+                const inpDil = document.createElement('input');
+                inpDil.type = 'number';
+                inpDil.className = 'input-dilution';
+                inpDil.value = row.dilution;
+                inpDil.oninput = (e) => {
+                    row.dilution = parseFloat(e.target.value);
+                    recalcSystem(sys);
+                    updateSummary();
+                };
+
+                tdDil.appendChild(btnDel);
+                tdDil.appendChild(inpDil);
+                tr.appendChild(tdDil);
+
+                // Count cells
+                for (let c = 0; c < sys.colCount; c++) {
+                    const td = document.createElement('td');
+                    const inp = document.createElement('input');
+                    inp.type = 'number';
+                    inp.className = 'input-count';
+                    inp.placeholder = '-';
+
+                    const key = `${row.id}_c${c}`;
+                    if (sys.data[key] !== undefined) {
+                        inp.value = sys.data[key];
+                    }
+
+                    inp.oninput = (e) => {
+                        const val = e.target.value;
+                        if (val === '') delete sys.data[key];
+                        else sys.data[key] = parseFloat(val);
+
+                        styleInput(inp);
+                        recalcSystem(sys);
+                        updateSummary();
+                    };
+
+                    styleInput(inp);
+                    td.appendChild(inp);
+                    tr.appendChild(td);
+                }
+                tbody.appendChild(tr);
+            });
+
+            recalcSystem(sys);
+        }
+
+        function styleInput(inp) {
+            inp.classList.remove('is-valid', 'is-est', 'is-high');
+            const val = parseFloat(inp.value);
+            if (isNaN(val)) return;
+
+            if (val > 300) inp.classList.add('is-high');
+            else if (val >= 30) inp.classList.add('is-valid');
+            else inp.classList.add('is-est');
+        }
+
+        // --- Grid Actions ---
+        function addRow(sysId) {
+            const sys = systems.find(s => s.id === sysId);
+            const lastDil = sys.rows.length > 0 ? sys.rows[sys.rows.length - 1].dilution : 0;
+            sys.rows.push({ id: 'r' + Date.now(), dilution: lastDil - 1 });
+            renderSystemGrid(sys);
+            updateSummary();
+        }
+
+        function removeRow(sysId, rowId) {
+            const sys = systems.find(s => s.id === sysId);
+            sys.rows = sys.rows.filter(r => r.id !== rowId);
+            Object.keys(sys.data).forEach(k => {
+                if (k.startsWith(rowId)) delete sys.data[k];
+            });
+            renderSystemGrid(sys);
+            updateSummary();
+        }
+
+        function addCol(sysId) {
+            const sys = systems.find(s => s.id === sysId);
+            sys.colCount++;
+            renderSystemGrid(sys);
+        }
+
+        function removeCol(sysId, index) {
+            const sys = systems.find(s => s.id === sysId);
+            let newData = {};
+            Object.keys(sys.data).forEach(key => {
+                const [rId, cPart] = key.split('_c');
+                const cIdx = parseInt(cPart);
+                if (cIdx < index) newData[key] = sys.data[key];
+                else if (cIdx > index) newData[`${rId}_c${cIdx - 1}`] = sys.data[key];
+            });
+            sys.data = newData;
+            sys.colCount = Math.max(1, sys.colCount - 1);
+            renderSystemGrid(sys);
+            updateSummary();
+        }
+
+        function resetSystem(sysId) {
+            if (!confirm('Clear all data for this system?')) return;
+            const sys = systems.find(s => s.id === sysId);
+            sys.data = {};
+            sys.rows = [
+                { id: 'r1', dilution: -1 },
+                { id: 'r2', dilution: -2 },
+                { id: 'r3', dilution: -3 }
+            ];
+            sys.colCount = 2;
+            renderSystemGrid(sys);
+            updateSummary();
+        }
+
+        function updateSystemName(sysId, name) {
+            const sys = systems.find(s => s.id === sysId);
+            sys.name = name;
+            updateSummary();
+        }
+
+        // --- Calculation ---
+        function recalcSystem(sys) {
+            const V = globalVol || 0.1;
+
+            let validPoints = [];
+            let highPoints = [];
+            let lowPoints = [];
+            let hasData = false;
+
+            sys.rows.forEach(row => {
+                const dilFactor = Math.pow(10, row.dilution);
+                for (let c = 0; c < sys.colCount; c++) {
+                    const key = `${row.id}_c${c}`;
+                    if (sys.data[key] !== undefined && !isNaN(sys.data[key])) {
+                        hasData = true;
+                        const N = sys.data[key];
+                        const pt = { N, dil: dilFactor, dilLog: row.dilution, id: key };
+
+                        if (N > 300) highPoints.push(pt);
+                        else if (N >= 30) validPoints.push(pt);
+                        else lowPoints.push(pt);
+                    }
+                }
+            });
+
+            const resultDiv = document.getElementById('result_' + sys.id);
+            const resultValue = document.getElementById('resultValue_' + sys.id);
+            const resultError = document.getElementById('resultError_' + sys.id);
+
+            if (!hasData) {
+                resultDiv.style.display = 'none';
+                sys.result = null;
+                return;
+            }
+
+            resultDiv.style.display = 'block';
+
+            let points, status, prefix = '';
+            if (validPoints.length > 0) {
+                points = validPoints;
+                status = 'valid';
+            } else if (highPoints.length > 0) {
+                highPoints.sort((a, b) => a.dil - b.dil);
+                points = [highPoints[0]];
+                status = 'high';
+                prefix = '> ';
+            } else if (lowPoints.length > 0) {
+                const allZero = lowPoints.every(p => p.N === 0);
+                if (allZero) {
+                    // LOD calculation
+                    const maxDilFactor = Math.max(...lowPoints.map(p => p.dil));
+                    const result = 1 / (V * maxDilFactor);
+                    const resExp = result.toExponential(1);
+                    const [mant, exp] = resExp.split('e');
+                    const expNum = parseInt(exp);
+
+                    sys.result = {
+                        value: result,
+                        error: null,
+                        status: 'lod',
+                        mantissa: mant,
+                        exponent: expNum,
+                        prefix: '< '
+                    };
+
+                    resultValue.innerHTML = `< ${mant} × 10<sup>${expNum}</sup><span class="unit">CFU/mL</span>`;
+                    resultError.innerHTML = 'Below detection limit';
+                    return;
+                }
+                points = lowPoints;
+                status = 'est';
+            }
+
+            // Calculate weighted result
+            let sumN = 0, sumDenomParts = 0;
+            points.forEach(p => {
+                sumN += p.N;
+                sumDenomParts += p.dil;
+            });
+
+            const denom = V * sumDenomParts;
+            const result = sumN / denom;
+            const error = Math.sqrt(sumN) / denom;
+
+            // Use error-based formatting (scientifically correct)
+            const formatted = formatWithError(result, error);
+
+            sys.result = {
+                value: result,
+                error: error,
+                status: status,
+                mantissa: formatted.mantissa,
+                exponent: formatted.exponent,
+                errorScaled: formatted.errorFormatted,
+                precision: formatted.precision,
+                prefix: prefix
+            };
+
+            resultValue.innerHTML = `${prefix}${formatted.mantissa} × 10<sup>${formatted.exponent}</sup><span class="unit">CFU/mL</span>`;
+            resultError.innerHTML = `± ${formatted.errorFormatted} × 10<sup>${formatted.exponent}</sup>`;
+        }
+
+        // --- Summary & Averaging ---
+        function updateSummary() {
+            const panel = document.getElementById('summaryPanel');
+            const grid = document.getElementById('summaryGrid');
+            const avgSection = document.getElementById('averageSection');
+            const avgValue = document.getElementById('averageValue');
+            const avgWarning = document.getElementById('averageWarning');
+
+            // Get valid results
+            const validResults = systems.filter(s => s.result && s.result.value).map(s => ({
+                ...s.result,
+                name: s.name || `System ${systems.indexOf(s) + 1}`,
+                sysId: s.id
+            }));
+
+            if (validResults.length < 2) {
+                panel.style.display = 'none';
+                // Still render calculation breakdown for single system
+                renderAllCalculations();
+                return;
+            }
+
+            panel.style.display = 'block';
+
+            // Render summary grid
+            grid.innerHTML = '';
+            validResults.forEach(r => {
+                const item = document.createElement('div');
+                item.className = 'summary-item';
+                item.innerHTML = `
+                    <div class="summary-item-label">${r.name}</div>
+                    <div class="summary-item-value">${r.prefix || ''}${r.mantissa} × 10<sup>${r.exponent}</sup></div>
+                    ${r.error ? `<div class="summary-item-error">± ${r.errorScaled} × 10<sup>${r.exponent}</sup></div>` : ''}
+                `;
+                grid.appendChild(item);
+            });
+
+            // Check order of magnitude
+            const exponents = validResults.filter(r => r.status !== 'lod').map(r => r.exponent);
+            const minExp = Math.min(...exponents);
+            const maxExp = Math.max(...exponents);
+            const sameOrder = (maxExp - minExp) <= 0;
+
+            if (sameOrder && exponents.length >= 2) {
+                // Calculate average
+                const avgableResults = validResults.filter(r => r.status !== 'lod');
+                const avgVal = avgableResults.reduce((s, r) => s + r.value, 0) / avgableResults.length;
+
+                const avgExp = avgVal.toExponential(1);
+                const [avgMant, avgExpPart] = avgExp.split('e');
+                const avgExpNum = parseInt(avgExpPart);
+
+                avgValue.innerHTML = `${avgMant} × 10<sup>${avgExpNum}</sup><span class="unit">CFU/mL</span>`;
+                avgWarning.style.display = 'none';
+            } else if (exponents.length >= 2) {
+                avgValue.innerHTML = '-';
+                avgWarning.style.display = 'block';
+            } else {
+                avgValue.innerHTML = '-';
+                avgWarning.style.display = 'none';
+            }
+
+            // Render full calculation breakdown
+            renderAllCalculations();
+        }
+
+        // --- Render Full Calculation Breakdown ---
+        function renderAllCalculations() {
+            const calcSection = document.getElementById('calcSection');
+            const calcBody = document.getElementById('calcBody');
+
+            // Check if any system has data
+            const systemsWithData = systems.filter(sys => sys.result && sys.result.value);
+
+            if (systemsWithData.length === 0) {
+                calcSection.style.display = 'none';
+                return;
+            }
+
+            calcSection.style.display = 'block';
+            calcBody.innerHTML = '';
+
+            const V = globalVol || 0.1;
+
+            // Render calculation for each system
+            systemsWithData.forEach((sys, index) => {
+                const block = document.createElement('div');
+                block.className = 'calc-block';
+
+                const sysName = sys.name || `System ${systems.indexOf(sys) + 1}`;
+                block.innerHTML = `<div class="calc-block-title">${sysName}</div>`;
+
+                // Get points for this system
+                let validPoints = [];
+                let lowPoints = [];
+                let highPoints = [];
+
+                sys.rows.forEach(row => {
+                    const dilFactor = Math.pow(10, row.dilution);
+                    for (let c = 0; c < sys.colCount; c++) {
+                        const key = `${row.id}_c${c}`;
+                        if (sys.data[key] !== undefined && !isNaN(sys.data[key])) {
+                            const N = sys.data[key];
+                            const pt = { N, dil: dilFactor, dilLog: row.dilution };
+                            if (N > 300) highPoints.push(pt);
+                            else if (N >= 30) validPoints.push(pt);
+                            else lowPoints.push(pt);
+                        }
+                    }
+                });
+
+                let points;
+                let isEst = false;
+                if (validPoints.length > 0) {
+                    points = validPoints;
+                } else if (highPoints.length > 0) {
+                    points = [highPoints[0]];
+                    isEst = true;
+                } else if (lowPoints.length > 0) {
+                    points = lowPoints;
+                    isEst = true;
+                }
+
+                if (!points || points.length === 0) return;
+
+                // Calculate values
+                let sumN = 0, sumDenomParts = 0;
+                points.forEach(p => {
+                    sumN += p.N;
+                    sumDenomParts += p.dil;
+                });
+
+                const denom = V * sumDenomParts;
+                const result = sumN / denom;
+                const error = Math.sqrt(sumN) / denom;
+                const sqrtSumN = Math.sqrt(sumN);
+
+                // Build strings
+                let numSumStr, denSumStr;
+                if (points.length <= 4) {
+                    numSumStr = points.map(p => p.N).join(' + ');
+                    denSumStr = points.map(p => `10^{${p.dilLog}}`).join(' + ');
+                } else {
+                    numSumStr = `${points[0].N} + ... + ${points[points.length - 1].N}`;
+                    denSumStr = `10^{${points[0].dilLog}} + ... + 10^{${points[points.length - 1].dilLog}}`;
+                }
+
+                const sumDValSci = toLatexSci(sumDenomParts, 2);
+                const denomTotalSci = toLatexSci(denom, 2);
+                const rawResSci = toLatexSci(result, 3);
+                const rawErrSci = toLatexSci(error, 3);
+
+                // Use error-based formatting for final result
+                const formatted = formatWithError(result, error);
+                const finalResSci = `${formatted.mantissa} \\times 10^{${formatted.exponent}}`;
+                const finalErrSci = `${formatted.errorFormatted} \\times 10^{${formatted.exponent}}`;
+
+                const steps = `
+                    \\begin{aligned}
+                    C_{total} &= \\frac{\\sum C \\pm \\sqrt{\\sum C}}{V \\times \\sum d} \\\\[1em]
+                    &= \\frac{(${numSumStr}) \\pm \\sqrt{${numSumStr}}}{${V} \\times (${denSumStr})} \\\\[1em]
+                    &= \\frac{${sumN} \\pm ${toLatexSci(sqrtSumN, 2)}}{${V} \\times (${sumDValSci})} \\\\[1em]
+                    &= \\frac{${sumN} \\pm ${toLatexSci(sqrtSumN, 2)}}{${denomTotalSci}} \\\\[1em]
+                    &= ${rawResSci} \\pm ${rawErrSci} \\; (\\text{raw}) \\\\[1em]
+                    &\\approx \\boxed{${finalResSci} \\pm ${finalErrSci} \\; \\text{CFU/mL}} \\quad (\\text{${formatted.precision} sig. figs})
+                    \\end{aligned}
+                `;
+
+
+                const mathRow = document.createElement('div');
+                mathRow.className = 'math-row';
+                katex.render(steps, mathRow, { displayMode: true });
+                block.appendChild(mathRow);
+
+                if (isEst) {
+                    const note = document.createElement('div');
+                    note.className = 'math-note';
+                    note.innerText = "Note: Counts are outside the optimal 30-300 range. Result is an estimate.";
+                    block.appendChild(note);
+                }
+
+                calcBody.appendChild(block);
+            });
+
+            // Render average calculation if applicable
+            const validResults = systemsWithData.filter(s => s.result && s.result.status !== 'lod');
+            if (validResults.length >= 2) {
+                const exponents = validResults.map(s => s.result.exponent);
+                const minExp = Math.min(...exponents);
+                const maxExp = Math.max(...exponents);
+                const sameOrder = (maxExp - minExp) <= 0;
+
+                if (sameOrder) {
+                    const avgBlock = document.createElement('div');
+                    avgBlock.className = 'calc-block average';
+                    avgBlock.innerHTML = `<div class="calc-block-title">📊 Average of Biological Replicates</div>`;
+
+                    // Build the average formula
+                    const valuesStr = validResults.map((s, i) => {
+                        const name = s.name || `C_{${systems.indexOf(s) + 1}}`;
+                        return `${s.result.mantissa} \\times 10^{${s.result.exponent}}`;
+                    }).join(' + ');
+
+                    const avgVal = validResults.reduce((sum, s) => sum + s.result.value, 0) / validResults.length;
+                    const avgExp = avgVal.toExponential(1);
+                    const [avgMant, avgExpPart] = avgExp.split('e');
+                    const avgExpNum = parseInt(avgExpPart);
+
+                    let avgError, avgErrFormula, avgErrCalc;
+
+                    if (errorMethod === 'propagation') {
+                        // Error propagation: σ_avg = sqrt(Σσᵢ²) / n
+                        const sumSquaredErrors = validResults.reduce((sum, s) => sum + Math.pow(s.result.error || 0, 2), 0);
+                        avgError = Math.sqrt(sumSquaredErrors) / validResults.length;
+
+                        const errorTermsStr = validResults.map((s, i) => {
+                            return `(${s.result.errorScaled} \\times 10^{${s.result.exponent}})^2`;
+                        }).join(' + ');
+
+                        avgErrFormula = `\\sigma_{\\bar{C}} &= \\frac{\\sqrt{\\sum \\sigma_i^2}}{n}`;
+                        avgErrCalc = `&= \\frac{\\sqrt{${errorTermsStr}}}{${validResults.length}}`;
+                    } else {
+                        // Simple average of errors: σ_avg = (Σσᵢ) / n
+                        avgError = validResults.reduce((sum, s) => sum + (s.result.error || 0), 0) / validResults.length;
+
+                        const errorTermsStr = validResults.map((s, i) => {
+                            return `${s.result.errorScaled} \\times 10^{${s.result.exponent}}`;
+                        }).join(' + ');
+
+                        avgErrFormula = `\\sigma_{\\bar{C}} &= \\frac{1}{n} \\sum_{i=1}^{n} \\sigma_i`;
+                        avgErrCalc = `&= \\frac{${errorTermsStr}}{${validResults.length}}`;
+                    }
+
+                    const avgErrScaled = avgError / Math.pow(10, avgExpNum);
+                    const avgErrFormatted = avgErrScaled.toPrecision(2);
+
+                    const avgSteps = `
+                        \\begin{aligned}
+                        \\bar{C} &= \\frac{1}{n} \\sum_{i=1}^{n} C_i \\\\[1em]
+                        &= \\frac{${valuesStr}}{${validResults.length}} \\\\[1em]
+                        &= ${toLatexSci(avgVal, 2)} \\; \\text{CFU/mL} \\\\[1.5em]
+                        ${avgErrFormula} \\\\[1em]
+                        ${avgErrCalc} \\\\[1em]
+                        &= ${toLatexSci(avgError, 2)} \\; \\text{CFU/mL} \\\\[1.5em]
+                        \\text{Result} &\\approx \\boxed{${avgMant} \\times 10^{${avgExpNum}} \\pm ${avgErrFormatted} \\times 10^{${avgExpNum}} \\; \\text{CFU/mL}}
+                        \\end{aligned}
+                    `;
+
+                    const avgMathRow = document.createElement('div');
+                    avgMathRow.className = 'math-row';
+                    katex.render(avgSteps, avgMathRow, { displayMode: true });
+                    avgBlock.appendChild(avgMathRow);
+
+                    calcBody.appendChild(avgBlock);
+                }
+            }
+        }
+
+        // --- Start ---
+        init();
+    </script>
+
+</body>
+
+</html>
