@@ -112,6 +112,30 @@
             box-shadow: 0 0 0 3px var(--primary-glow);
         }
 
+        /* Volume Preset Buttons */
+        .volume-btn {
+            padding: 8px 14px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .volume-btn:hover {
+            border-color: var(--primary);
+            background: var(--surface-alt);
+        }
+
+        .volume-btn.active {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-weight: 600;
+        }
+
         /* Systems Grid */
         .systems-container {
             display: grid;
@@ -584,11 +608,26 @@
         <header>
             <h1>CFU Calculator</h1>
             <div class="header-controls">
-                <div class="settings">
-                    <label>Volume Plated (V):</label>
-                    <input type="number" id="volInput" value="0.1" step="0.05" style="width: 80px;">
-                    <span>mL</span>
+                <div class="settings" style="display: flex; align-items: center; gap: 10px;">
+                    <label>Volume (V):</label>
+                    <div class="volume-presets" style="display: flex; gap: 5px;">
+                        <button class="btn volume-btn active" data-volume="0.1" onclick="setVolume(0.1, this)"
+                            title="Spread/Drigalski plate">
+                            0.1 mL <span style="font-size: 0.7em; opacity: 0.7;">(Spread/Drigalski)</span>
+                        </button>
+                        <button class="btn volume-btn" data-volume="1" onclick="setVolume(1, this)" title="Pour plate">
+                            1 mL <span style="font-size: 0.7em; opacity: 0.7;">(Pour)</span>
+                        </button>
+                        <button class="btn volume-btn" data-volume="custom" onclick="showCustomVolume()"
+                            title="Custom volume">
+                            Custom
+                        </button>
+                    </div>
+                    <input type="number" id="volInput" value="0.1" step="0.01" style="width: 70px; display: none;"
+                        onchange="updateCustomVolume(this.value)">
+                    <span id="volUnit" style="display: none;">mL</span>
                 </div>
+
                 <button class="btn btn-primary" onclick="addSystem()">+ Add Biological Replicate</button>
             </div>
         </header>
@@ -645,6 +684,40 @@
             updateSummary();
         }
 
+        // --- Volume Preset Functions ---
+        function setVolume(vol, btn) {
+            globalVol = vol;
+            document.getElementById('volInput').value = vol;
+            document.getElementById('volInput').style.display = 'none';
+            document.getElementById('volUnit').style.display = 'none';
+
+            // Update active button
+            document.querySelectorAll('.volume-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Recalculate all systems
+            systems.forEach(sys => recalcSystem(sys));
+            updateSummary();
+        }
+
+        function showCustomVolume() {
+            const input = document.getElementById('volInput');
+            input.style.display = 'inline-block';
+            document.getElementById('volUnit').style.display = 'inline';
+            input.focus();
+            input.select();
+
+            // Update active button
+            document.querySelectorAll('.volume-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('.volume-btn[data-volume="custom"]').classList.add('active');
+        }
+
+        function updateCustomVolume(val) {
+            globalVol = parseFloat(val) || 0.1;
+            systems.forEach(sys => recalcSystem(sys));
+            updateSummary();
+        }
+
         // --- Helper: Format number as LaTeX scientific notation ---
         function toLatexSci(num, precision = 2) {
             if (num === 0) return '0';
@@ -668,55 +741,44 @@
         }
 
         // --- Format result based on error (proper scientific rounding) ---
-        // The error determines precision: round error to 1-2 sig figs, then match result to same decimal place
+        // The error determines precision: round error to 1 sig fig, then match result to same decimal place
         function formatWithError(result, error) {
             if (result === 0) return { mantissa: '0', exponent: 0, errorFormatted: '0', precision: 1 };
 
             // Step 1: Determine the exponent of the result
             const resultExp = Math.floor(Math.log10(Math.abs(result)));
 
-            // Step 2: Determine the exponent of the error (how many sig figs we can trust)
-            const errorExp = Math.floor(Math.log10(Math.abs(error)));
-
-            // The error tells us the uncertainty. We round error to 1-2 sig figs.
-            // The number of decimal places in the result should match the error's decimal place.
-
-            // Step 3: Determine precision
-            // If error is ~10^5 and result is ~10^7, we have 2 meaningful figures.
-            // precision = resultExp - errorExp + 1 (approximately how many sig figs)
-            // But we cap error display to 2 sig figs max.
-
-            // Normalize error to same scale as mantissa
+            // Step 2: Normalize error to same scale as mantissa
             const errorNormalized = error / Math.pow(10, resultExp);
 
-            // Round error to 2 sig figs
-            const errorDecimalPlaces = Math.max(0, 1 - Math.floor(Math.log10(Math.abs(errorNormalized))));
+            // Step 3: Round error to 1 significant figure
+            const errorMagnitude = Math.floor(Math.log10(Math.abs(errorNormalized)));
+            const errorDecimalPlaces = Math.max(0, -errorMagnitude);
             const errorRounded = bankersRound(errorNormalized, errorDecimalPlaces);
 
-            // Determine decimal places needed for the mantissa (match error's precision)
-            // If error rounds to e.g. 0.63, we need 2 decimal places on mantissa
+            // Step 4: Round the mantissa to match the error's decimal place
             const mantissaDecimalPlaces = errorDecimalPlaces;
-
-            // Round the mantissa using Banker's rounding
             const resultNormalized = result / Math.pow(10, resultExp);
             const mantissaRounded = bankersRound(resultNormalized, mantissaDecimalPlaces);
 
-            // Handle rollover (e.g., 9.95 -> 10.0)
+            // Handle rollover (e.g., 9.5 -> 10)
             let finalMantissa = mantissaRounded;
             let finalExp = resultExp;
+            let finalErrorRounded = errorRounded;
             if (Math.abs(finalMantissa) >= 10) {
                 finalMantissa /= 10;
                 finalExp += 1;
-                // Recalculate error for new scale
+                finalErrorRounded /= 10;
             }
 
             return {
                 mantissa: finalMantissa.toFixed(mantissaDecimalPlaces),
                 exponent: finalExp,
-                errorFormatted: errorRounded.toFixed(errorDecimalPlaces),
+                errorFormatted: finalErrorRounded.toFixed(errorDecimalPlaces),
                 precision: mantissaDecimalPlaces + 1
             };
         }
+
 
 
         // --- System Template ---
